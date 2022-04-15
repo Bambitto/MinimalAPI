@@ -8,7 +8,7 @@ namespace CRUDApi.Repositories
         {
             new()
             {
-                Id = 1,
+                UserId = 1,
                 Email = "Josh@email.com",
                 Name = "Josh",
                 Surname = "Adams",
@@ -20,7 +20,7 @@ namespace CRUDApi.Repositories
             },
             new()
             {
-                Id = 2,
+                UserId = 2,
                 Email = "jtcnw@email.com",
                 Name = "Steven",
                 Surname = "Jacobson",

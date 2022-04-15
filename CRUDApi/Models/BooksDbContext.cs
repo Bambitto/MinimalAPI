@@ -24,8 +24,7 @@ namespace CRUDApi.Models
                 .Property(u => u.Password)
                 .IsRequired();
 
-            modelBuilder.Entity<UserLogin>()
-                .HasNoKey();
+                
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
