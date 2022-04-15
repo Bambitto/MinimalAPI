@@ -10,6 +10,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//var connectionString = builder.Configuration.GetConnectionString("LAPTOP-EMCR7O1C") ?? "Data Source=Books.db";
+//builder.Services.AddSqlite<BooksDb>(connectionString);
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -91,7 +93,7 @@ IResult Login(UserLogin user, IUserService service)
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, loggedInUser.Username),
+            new Claim(ClaimTypes.NameIdentifier, loggedInUser.UserLogin.Username),
             new Claim(ClaimTypes.Email, loggedInUser.Email),
             new Claim(ClaimTypes.Name, loggedInUser.Name),
             new Claim(ClaimTypes.Surname, loggedInUser.Surname),
