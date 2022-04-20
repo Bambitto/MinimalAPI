@@ -4,6 +4,6 @@ namespace CRUDApi.Services
 {
     public interface IUserService
     {
-        public UserModel Get(UserLogin userLogin);
+        public UserModel Get(UserModel userModel);
     }
 }

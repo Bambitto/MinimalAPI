@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,8 +54,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 builder.Services.AddAuthorization();
-
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IBookService, BookService>();
 builder.Services.AddSingleton<IUserService, UserService>();
 
@@ -64,7 +65,7 @@ app.UseSwagger();
 app.UseAuthorization();
 app.UseAuthentication();
 
-app.MapPost("/login", (UserLogin user, IUserService service) => Login(user, service));
+app.MapPost("/login", (UserModel user, IUserService service) => Login(user, service));
 
 app.MapPost("/create",
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
@@ -84,7 +85,7 @@ app.MapDelete("/delete",
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
     (int id, IBookService service) => Delete(id, service));
 
-IResult Login(UserLogin user, IUserService service)
+IResult Login(UserModel user, IUserService service)
 {
     if (user.Username != null && user.Password != null)
     {
@@ -93,7 +94,7 @@ IResult Login(UserLogin user, IUserService service)
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, loggedInUser.UserLogin.Username),
+            new Claim(ClaimTypes.NameIdentifier, loggedInUser.Username),
             new Claim(ClaimTypes.Email, loggedInUser.Email),
             new Claim(ClaimTypes.Name, loggedInUser.Name),
             new Claim(ClaimTypes.Surname, loggedInUser.Surname),
@@ -128,7 +129,7 @@ IResult Create(Book book, IBookService service)
 IResult Get(int id, IBookService service)
 {
     var result = service.Get(id);
-    if (result == null) return Results.NotFound("Book not found");
+    if (result is null) return Results.NotFound("Book not found");
     return Results.Ok(result);
 }
 
@@ -141,7 +142,7 @@ IResult List(IBookService service)
 IResult Update(Book book, IBookService service)
 {
     var result = service.Update(book);
-    if (result == null) return Results.NotFound("Book not found");
+    if (result is null) return Results.NotFound("Book not found");
     return Results.Ok(result);
 }
 

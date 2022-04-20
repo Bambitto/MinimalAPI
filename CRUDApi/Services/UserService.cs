@@ -5,9 +5,9 @@ namespace CRUDApi.Services
 {
     public class UserService : IUserService
     {
-        public UserModel Get(UserLogin userLogin)
+        public UserModel Get(UserModel userModel)
         {
-            UserModel user = UserRepository.Users.FirstOrDefault(x => x.UserLogin.Username.Equals(userLogin.Username, StringComparison.OrdinalIgnoreCase) && x.UserLogin.Password.Equals(userLogin.Password));
+            UserModel user = UserRepository.Users.FirstOrDefault(x => x.Username.Equals(userModel.Username, StringComparison.OrdinalIgnoreCase) && x.Password.Equals(userModel.Password));
 
             return user;
         }

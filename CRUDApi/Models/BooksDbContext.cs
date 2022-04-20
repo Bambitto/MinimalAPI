@@ -2,13 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 
 namespace CRUDApi.Models
-
 {
     public class BooksDbContext : DbContext
     {
         public DbSet<Book> Books { get; set; }
         public DbSet<UserModel> Users { get; set; }
-        public DbSet<UserLogin> UserLogins { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -16,14 +14,13 @@ namespace CRUDApi.Models
                 .Property(b => b.Name)
                 .IsRequired();
 
-            modelBuilder.Entity<UserLogin>()
+            modelBuilder.Entity<UserModel>()
                 .Property(u => u.Username)
                 .IsRequired();
 
-            modelBuilder.Entity<UserLogin>()
+            modelBuilder.Entity<UserModel>()
                 .Property(u => u.Password)
                 .IsRequired();
-
                 
         }
 
