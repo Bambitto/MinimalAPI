@@ -5,10 +5,8 @@ namespace CRUDApi.Services
 {
     public interface IBookService
     {
-        public Book Create(Book book);
-        public Book Get(int id);
-        public List<Book> List();
-        public Book Update(Book book);
-        public bool Delete(int id);
+        public Book Create(BookReqBody newBook);
+        public Book Get(BooksDbContext context, Guid id);
+        public Book Update(BooksDbContext context, BookReqBody newBook, Guid id);
     }
 }

@@ -1,18 +1,19 @@
 using CRUDApi.Models;
 using CRUDApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using CRUDApi.Requests;
+using FluentValidation;
+using CRUDApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//var connectionString = builder.Configuration.GetConnectionString("LAPTOP-EMCR7O1C") ?? "Data Source=Books.db";
-//builder.Services.AddSqlite<BooksDb>(connectionString);
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -55,9 +56,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 });
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
+//builder.Services.AddControllers().AddJsonOptions(x =>
+//               x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IBookService, BookService>();
 builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddValidatorsFromAssemblyContaining(typeof(BookRequestValidator));
+builder.Services.AddDbContext<BooksDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
 
 var app = builder.Build();
 
@@ -65,31 +74,14 @@ app.UseSwagger();
 app.UseAuthorization();
 app.UseAuthentication();
 
-app.MapPost("/login", (UserModel user, IUserService service) => Login(user, service));
+app.MapPost("/login", (BooksDbContext context, string username, string password, IUserService service) => Login(context, username, password, service));
+app.RegisterEndpoins();
 
-app.MapPost("/create",
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
-    (Book book, IBookService service) => Create(book, service));
-
-app.MapGet("/get",
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator, Standard")]
-    (int id, IBookService service) => Get(id, service));
-
-app.MapGet("/list", (IBookService service) => List(service));
-
-app.MapPut("/update",
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
-    (Book book, IBookService service) => Update(book, service));
-
-app.MapDelete("/delete",
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
-    (int id, IBookService service) => Delete(id, service));
-
-IResult Login(UserModel user, IUserService service)
+IResult Login(BooksDbContext context, string username, string password, IUserService service)
 {
-    if (user.Username != null && user.Password != null)
+    if (username != null && password != null)
     {
-        var loggedInUser = service.Get(user);
+        var loggedInUser = service.Get(context, username, password);
         if (loggedInUser is null) return Results.NotFound("User not found");
 
         var claims = new[]
@@ -98,7 +90,7 @@ IResult Login(UserModel user, IUserService service)
             new Claim(ClaimTypes.Email, loggedInUser.Email),
             new Claim(ClaimTypes.Name, loggedInUser.Name),
             new Claim(ClaimTypes.Surname, loggedInUser.Surname),
-            new Claim(ClaimTypes.Role, loggedInUser.Role)
+            new Claim(ClaimTypes.Role, loggedInUser.Role.ToLower())
         };
 
         var token = new JwtSecurityToken
@@ -118,39 +110,6 @@ IResult Login(UserModel user, IUserService service)
     }
     return Results.NotFound();
     
-}
-
-IResult Create(Book book, IBookService service)
-{
-    var result = service.Create(book);
-    return Results.Ok(result);
-}
-
-IResult Get(int id, IBookService service)
-{
-    var result = service.Get(id);
-    if (result is null) return Results.NotFound("Book not found");
-    return Results.Ok(result);
-}
-
-IResult List(IBookService service)
-{
-    var result = service.List();
-    return Results.Ok(result);
-}
-
-IResult Update(Book book, IBookService service)
-{
-    var result = service.Update(book);
-    if (result is null) return Results.NotFound("Book not found");
-    return Results.Ok(result);
-}
-
-IResult Delete(int id, IBookService service)
-{
-    var result = service.Delete(id);
-    if (!result) Results.BadRequest("Something went wrong");
-    return Results.Ok(result);
 }
 
 app.UseSwaggerUI();

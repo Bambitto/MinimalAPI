@@ -1,14 +1,13 @@
 ﻿using CRUDApi.Models;
-using CRUDApi.Repositories;
 
 namespace CRUDApi.Services
 {
     public class UserService : IUserService
     {
-        public UserModel Get(UserModel userModel)
+        public User Get(BooksDbContext context, string username, string password)
         {
-            UserModel user = UserRepository.Users.FirstOrDefault(x => x.Username.Equals(userModel.Username, StringComparison.OrdinalIgnoreCase) && x.Password.Equals(userModel.Password));
-
+            User user = context.Users.Where(x => x.Username == username && x.Password == password).FirstOrDefault();
+            //FirstOrDefault(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase) && x.Password.Equals(password, StringComparison.OrdinalIgnoreCase));
             return user;
         }
     }
