@@ -56,11 +56,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 });
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddControllers().AddJsonOptions(x =>
-//               x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IBookService, BookService>();
-builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddValidatorsFromAssemblyContaining(typeof(BookRequestValidator));
 builder.Services.AddDbContext<BooksDbContext>(options =>
 {
@@ -74,14 +71,14 @@ app.UseSwagger();
 app.UseAuthorization();
 app.UseAuthentication();
 
-app.MapPost("/login", (BooksDbContext context, string username, string password, IUserService service) => Login(context, username, password, service));
+app.MapPost("/login", async (BooksDbContext context, string username, string password) => await Login(context, username, password));
 app.RegisterEndpoins();
 
-IResult Login(BooksDbContext context, string username, string password, IUserService service)
+async Task<IResult> Login(BooksDbContext context, string username, string password)
 {
     if (username != null && password != null)
     {
-        var loggedInUser = service.Get(context, username, password);
+        var loggedInUser = await context.Users.FirstOrDefaultAsync(c => c.Username == username && c.Password == password);
         if (loggedInUser is null) return Results.NotFound("User not found");
 
         var claims = new[]

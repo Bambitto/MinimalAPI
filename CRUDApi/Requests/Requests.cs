@@ -3,6 +3,7 @@ using CRUDApi.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 
 namespace CRUDApi.Requests
@@ -11,32 +12,31 @@ namespace CRUDApi.Requests
     {
         public static WebApplication RegisterEndpoins(this WebApplication app)
         {
-            app.MapPost("/register", (BooksDbContext context, UserReqBody user) => Register(context, user))
+            app.MapPost("/register", async (BooksDbContext context, UserReqBody user) => await Register(context, user))
                 .WithValidator<UserReqBody>();
 
             app.MapPost("/create",
                [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "admin")]
-            (BooksDbContext context, BookReqBody newBook, IBookService service, IValidator<BookReqBody> validator) => Create(context, newBook, service, validator))
+            async (BooksDbContext context, BookReqBody newBook, IBookService service) => await Create(context, newBook, service))
             .WithValidator<BookReqBody>();
 
             app.MapGet("/get",
                 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "admin, standard")]
-            (BooksDbContext context, Guid id, IBookService service) => Get(context, id, service));
+            async (BooksDbContext context, Guid id, IBookService service) => await Get(context, id, service));
 
-            app.MapGet("/list", (BooksDbContext context) => List(context));
+            app.MapGet("/list", async (BooksDbContext context) => await List(context));
 
             app.MapPut("/update",
                 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "admin")]
-            (BooksDbContext context, BookReqBody newBook, Guid id, IBookService service) => Update(context, newBook, id, service))
-                .WithValidator<BookReqBody>();
+            (BooksDbContext context, BookReqBody newBook, Guid id, IBookService service) => Update(context, newBook, id, service));
 
             app.MapDelete("/delete",
                 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "admin")]
-            (BooksDbContext context, Guid id, IBookService service) => Delete(context, id, service));
+            async (BooksDbContext context, Guid id, IBookService service) => await Delete(context, id, service));
 
             return app;
 
-            static IResult Register(BooksDbContext context, UserReqBody user)
+            static async Task<IResult> Register(BooksDbContext context, UserReqBody user)
             {
                 var newUser = new User
                 {
@@ -48,22 +48,22 @@ namespace CRUDApi.Requests
                     Role = "standard",
                     Id = new Guid(),
                 };
-                context.Add(newUser);
-                context.SaveChanges();
+                await context.AddAsync(newUser);
+                await context.SaveChangesAsync();
                 return Results.Ok(user);
             }
 
-            static IResult Create(BooksDbContext context, BookReqBody newBook, IBookService service, IValidator<BookReqBody> validator)
+            static async Task<IResult> Create(BooksDbContext context, BookReqBody newBook, IBookService service)
             {
                 var book = service.Create(newBook);
-                context.Books.Add(book);
-                context.SaveChanges();
+                await context.Books.AddAsync(book);
+                await context.SaveChangesAsync();
                 return Results.Ok(book);
             }
 
-            static IResult Get(BooksDbContext context, Guid id, IBookService service)
+            static async Task<IResult> Get(BooksDbContext context, Guid id, IBookService service)
             {
-                var result = service.Get(context, id);
+                var result = await service.Get(context, id);
                 if (result is null)
                 {
                     return Results.NotFound("Book not found");
@@ -71,31 +71,31 @@ namespace CRUDApi.Requests
                 return Results.Ok(result);
             }
 
-            static IResult List(BooksDbContext context)
+            static async Task<IResult> List(BooksDbContext context)
             {
-                var result = context.Books.ToList();
+                var result = await context.Books.ToListAsync();
                 return Results.Ok(result);
             }
 
 
-            static IResult Update(BooksDbContext context, BookReqBody newBook, Guid id, IBookService service)
+            static async Task<IResult> Update(BooksDbContext context, BookReqBody newBook, Guid id, IBookService service)
             {
                 var result = service.Update(context, newBook, id);
                 if (result is null) return Results.NotFound("Book not found");
 
-                context.SaveChanges();
+                await context.SaveChangesAsync();
 
                 return Results.Ok(result);
             }
 
-            static IResult Delete(BooksDbContext context, Guid id, IBookService service)
+            static async Task<IResult> Delete(BooksDbContext context, Guid id, IBookService service)
             {
-                var book = service.Get(context, id);
+                var book = await service.Get(context, id);
 
                 if (book is null) return Results.NotFound("Book not found");
 
                 context.Books.Remove(book);
-                context.SaveChanges();
+                await context.SaveChangesAsync();
 
                 return Results.Ok();
             }
